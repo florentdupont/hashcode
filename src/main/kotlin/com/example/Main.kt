@@ -67,7 +67,7 @@ fun run(path:String, out:String) {
         val (videoId, endpointId, viewCount) = lines.get( readIndex).split(" ")
         readIndex++
 //        rest = rest.drop(1)
-        val request = Request(videoId.toInt() , viewCount.toInt(), endpointId.toInt())
+        val request = Request(videoId.toInt() , viewCount.toInt(), endpointId.toInt(),videos[videoId.toInt()].size)
         requests.add(request)
     }
 
@@ -83,8 +83,8 @@ fun run(path:String, out:String) {
         caches.add(cache)
     }
 
-    requests.sortWith(compareBy({it.viewCount}))
-
+    requests.sort()
+    print(requests)
     // ALGO PRINCIPAL
     requests.forEach { r ->
 
