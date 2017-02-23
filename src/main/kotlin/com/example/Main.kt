@@ -2,6 +2,7 @@ package com.example
 
 import java.io.File
 import java.util.*
+import kotlin.comparisons.compareBy
 
 
 fun main(args: Array<String>) {
@@ -10,154 +11,119 @@ fun main(args: Array<String>) {
     val resourcesPath = "/src/main/resources"
     val path = homePath + resourcesPath
 
-    run("$path/big.in", "$path/big.out")
-    run("$path/medium.in", "$path/medium.out")
-    run("$path/small.in", "$path/small.out")
-    run("$path/example.in", "$path/example.out")
+    run("$path/kittens.in", "$path/kittens.out")
+    run("$path/me_at_the_zoo.in", "$path/me_at_the_zoo.out")
+    run("$path/trending_today.in", "$path/trending_today.out")
+    run("$path/videos_worth_spreading.in", "$path/videos_worth_spreading.out")
 }
 
 fun run(path:String, out:String) {
 
+    var readIndex = 0
     val lines = File(path).readLines()
 
-    val first = lines.first()
-    val rest = lines.drop(1);
+    val first = lines.get(readIndex)
+    readIndex++
 
-    val (rowCount, columnCount, eltsPerSlice, maxCellsPerSlice) = first.split(" ")
+    val (videoCountStr, endpointCountStr, requestCountStr, cacheCountStr, cacheSizeStr) = first.split(" ")
 
-    println("rows : $rowCount")
-    println("columns : $columnCount")
-    println("elements per slice : $eltsPerSlice")
-    println("max cells per slice : $maxCellsPerSlice")
+    val videoCount = videoCountStr.toInt()
+    val endpointCount = endpointCountStr.toInt()
+    val requestCount = requestCountStr.toInt()
+    val cacheCount = cacheCountStr.toInt()
+    val cacheSize = cacheSizeStr.toInt()
 
-    val pizza = Pizza(rowCount.toInt(), columnCount.toInt())
-    pizza.load(rest)
+    println("videoCount : $videoCount")
+    println("endpointCount : $endpointCount")
+    println("requestCount : $requestCount")
+    println("cacheCount : $cacheCount")
 
-    println(pizza)
 
-    val ingredient = pizza[1,1]
-    println(ingredient)
+    val videos = lines.get(readIndex).split(" ").mapIndexed { i, s ->  Video(i, s.toInt())}
+    readIndex++
 
-    val slices = arrayListOf<Slice>();
-    var cells = ArrayList<Cell>()
-    var slice = Slice(cells)
-    for(r in 0 until pizza.rowCount){
-        cells = ArrayList<Cell>()
-        slice = Slice(cells)
-        for(c in 0 until pizza.columnCount) {
 
-            val current = pizza[r, c] ?: continue;
+    println("before reading endpoints")
+    val endpoints = HashMap<Int, Endpoint>(endpointCount)
+    for(endpointIndex in 0 until endpointCount) {
+        val (latency, connectionCount) = lines.get(readIndex).split(" ")
+        readIndex++
+//        rest = rest.drop(1)
+        var newEndpoint = Endpoint(endpointIndex, latency.toInt())
 
-            // Si la part n'a pas assez de cellules et que la cellule n'est pas deja dans une part on l'ajoute a la part
-            if(slice.cells.size < maxCellsPerSlice.toInt() && !current.isInSlice) {
-                println("part possible")
-
-                cells.add(current)
-                //si la part est la derniere de la rangee et qu'elle est valide on l'ajoute
-                if (c == pizza.columnCount -1 && slice.numberOfCellsOfElement("T") >= eltsPerSlice.toInt()
-                        && slice.numberOfCellsOfElement("M") >= eltsPerSlice.toInt()) {
-                    slices.add(slice)
-                    slice.setCellUnavailable(pizza)
-                    println(slice)
-                    cells = ArrayList<Cell>()
-                    slice = Slice(cells)
-
-                }
-                // Sinon si la part a le nombre limite de cellule on ajoute la part et on reinitialise
-            } else if (slice.cells.size == maxCellsPerSlice.toInt() && slice.numberOfCellsOfElement("T") >= eltsPerSlice.toInt()
-                    && slice.numberOfCellsOfElement("M") >= eltsPerSlice.toInt()) {
-                slices.add(slice)
-                slice.setCellUnavailable(pizza)
-                println(slice)
-                cells = ArrayList<Cell>()
-                slice = Slice(cells)
-                cells.add(current)
-                // Sinon si on a une part a une cellule et que l'on est a la fin de la ligne on l'ajoute
-                // TODO : verifier qu'on a bien assez d'ingredients de chaque type
-            } else if (cells.size >= 1 && r == pizza.columnCount - 1  && slice.cells.size < maxCellsPerSlice.toInt() && !current.isInSlice) {
-                cells.add(current)
-                slices.add(slice)
-                slice.setCellUnavailable(pizza)
-                println(slice)
-                cells = ArrayList<Cell>()
-                slice = Slice(cells)
-                cells.add(current)
-                //Sinon on cree une nouvelle part
-            } else {
-                cells = ArrayList<Cell>()
-                slice = Slice(cells)
-            }
+        for(connectionIndex in 0 until connectionCount.toInt()) {
+            val (cacheIndex, cacheLatency) = lines.get(readIndex).split(" ")
+            readIndex++
+            newEndpoint.cacheLatencies.put(cacheIndex.toInt(), cacheLatency.toInt())
 
         }
+        endpoints[endpointIndex] = newEndpoint
     }
-    cells = ArrayList<Cell>()
-    slice = Slice(cells)
-    for(c in 0 until pizza.columnCount){
-        cells = ArrayList<Cell>()
-        slice = Slice(cells)
-        for(r in 0 until pizza.rowCount) {
 
-            //val last = pizza[r-1, c] ?: continue;
+    println("after reading endpoints")
+    val requests = ArrayList<Request>(requestCount)
 
-            val current = pizza[r, c] ?: continue;
-            // Si la part n'a pas assez de cellules et que la cellule n'est pas deja dans une part on l'ajoute a la part
-            if(slice.cells.size < maxCellsPerSlice.toInt() &&  !current.isInSlice) {
-                println("part possible")
+    for(i in 0 until requestCount) {
+        val (videoId, endpointId, viewCount) = lines.get( readIndex).split(" ")
+        readIndex++
+//        rest = rest.drop(1)
+        val request = Request(videoId.toInt() , viewCount.toInt(), endpointId.toInt())
+        requests.add(request)
+    }
 
-                cells.add(current)
 
-                //si la part est la derniere de la colonne et qu'elle est valide on l'ajoute
-                if (c == pizza.rowCount -1 && slice.numberOfCellsOfElement("T") >= eltsPerSlice.toInt()
-                        && slice.numberOfCellsOfElement("M") >= eltsPerSlice.toInt()) {
-                    slices.add(slice)
-                    slice.setCellUnavailable(pizza)
-                    println(slice)
-                    cells = ArrayList<Cell>()
-                    slice = Slice(cells)
+    println(videos.size)
+    println(endpoints.size)
+    println(requests.size)
 
+    var caches = ArrayList<Cache>(cacheCount)
+
+    for(i in 0 until cacheCount) {
+        var cache = Cache(i, cacheSize)
+        caches.add(cache)
+    }
+
+    requests.sortWith(compareBy({it.viewCount}))
+
+    // ALGO PRINCIPAL
+    requests.forEach { r ->
+
+        val endpoint:Endpoint = endpoints[r.endpointId] as Endpoint
+        val videoSize = videos[r.videoId].size
+
+        var minCacheId:Int = -1
+        var minLatency = Int.MAX_VALUE
+        endpoint.cacheLatencies.forEach { id, latency ->
+            if(videoSize <= caches[id].freeSize) {
+                if( latency < minLatency ) {
+                    minLatency = latency
+                    minCacheId = id
                 }
-                // Sinon si la part a le nombre limite de cellule on ajoute la part et on reinitialise
-            } else if (slice.cells.size == maxCellsPerSlice.toInt() && slice.numberOfCellsOfElement("T") >= eltsPerSlice.toInt()
-                    && slice.numberOfCellsOfElement("M") >= eltsPerSlice.toInt()) {
-                slices.add(slice)
-                slice.setCellUnavailable(pizza)
-                println(slice)
-                cells = ArrayList<Cell>()
-                slice = Slice(cells)
-                cells.add(current)
-                // Sinon si on a une part a une cellule et que l'on est a la fin de la colonne on l'ajoute
-                // TODO : verifier qu'on a bien assez d'ingredients de chaque type
-            } else if (cells.size >= 1 && r == pizza.rowCount - 1 && slice.cells.size < maxCellsPerSlice.toInt() && !current.isInSlice) {
-                cells.add(current)
-                slices.add(slice)
-                slice.setCellUnavailable(pizza)
-                println(slice)
-                cells = ArrayList<Cell>()
-                slice = Slice(cells)
-                cells.add(current)
-            } else {
-                cells = ArrayList<Cell>()
-                slice = Slice(cells)
             }
-
         }
+
+
+        if(minCacheId != -1) {
+            if( !caches[minCacheId].videoIds.contains(r.videoId)) {
+                caches[minCacheId].videoIds.add(r.videoId)
+                caches[minCacheId].freeSize -= videoSize
+            }
+        }
+
     }
 
+
+
+    // SORTIE
     File(out).printWriter().use { out ->
-        out.println(slices.size)
+        out.println(caches.size)
 
-        slices.forEach {
-            slice -> out.println("${slice.cells.first().row} ${slice.cells.first().col} ${slice.cells.last().row} ${slice.cells.last().col}")
+        caches.forEach {
+            cache -> out.print("${cache.id} ")
+            out.println(cache.videoIds.joinToString(" "))
         }
     }
 
-}
-
-fun isInSlices(slices: ArrayList<Slice>, cell:Cell):Boolean {
-    println("isInSlice ? $cell" )
-    val result = slices.filter { slice -> slice.isIn(cell)}.size > 0
-    println("result : $result")
-    return result
 }
 
 
