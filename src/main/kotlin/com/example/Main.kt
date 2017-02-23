@@ -6,12 +6,15 @@ import java.util.*
 
 fun main(args: Array<String>) {
 
-    run("D:\\dev\\repo_git\\hashcode\\src\\main\\resources\\big.in", "D:\\dev\\repo_git\\hashcode\\src\\main\\resources\\big.out")
-    run("D:\\dev\\repo_git\\hashcode\\src\\main\\resources\\medium.in", "D:\\dev\\repo_git\\hashcode\\src\\main\\resources\\medium.out")
-    run("D:\\dev\\repo_git\\hashcode\\src\\main\\resources\\small.in", "D:\\dev\\repo_git\\hashcode\\src\\main\\resources\\small.out")
-    run("D:\\dev\\repo_git\\hashcode\\src\\main\\resources\\example.in", "D:\\dev\\repo_git\\hashcode\\src\\main\\resources\\example.out")
-}
+    val homePath = System.getProperty("user.dir")
+    val resourcesPath = "/src/main/resources"
+    val path = homePath + resourcesPath
 
+    run("$path/big.in", "$path/big.out")
+    run("$path/medium.in", "$path/medium.out")
+    run("$path/small.in", "$path/small.out")
+    run("$path/example.in", "$path/example.out")
+}
 
 fun run(path:String, out:String) {
 
@@ -157,78 +160,6 @@ fun isInSlices(slices: ArrayList<Slice>, cell:Cell):Boolean {
     return result
 }
 
-data class Slice(val cells : ArrayList<Cell>) {
-
-    fun isIn(cell:Cell):Boolean {
-        println("cell  :$cell")
-        println("cells :$cells")
-        println("result :" + (cells.indexOf(cell) != -1))
-        return (cells.indexOf(cell) != -1)
-    }
-
-    fun numberOfCellsOfElement(type:String):Int {
-        var res = 0
-        cells.forEach {
-            cell -> if (cell.type == type) {
-            res++
-        }
-        }
-        return res
-    }
-
-    fun setCellUnavailable(pizza:Pizza) {
-        cells.forEach {
-            cell -> pizza.ingredients[cell.row][cell.col]!!.setInSlice()
-        }
-    }
-}
-
-data class Cell(val row:Int, val col:Int, val type:String) {
-    var isInSlice: Boolean
-    init {
-        isInSlice = false
-    }
-    fun setInSlice() {
-        isInSlice = true
-    }
-}
 
 
-data class Pizza(val rowCount:Int, val columnCount:Int) {
 
-    val ingredients: Board<Cell?>
-
-    init {
-        println("initializing Pizza")
-        ingredients = Board(rowCount, columnCount)
-    }
-
-    fun load(rows: List<String>) {
-        if (rows.size != rowCount) {
-            throw Exception("Erreur : le nombre de ligne ne correspond pas à ce qui est attendu")
-        }
-
-        rows.forEachIndexed { rowIndex, row ->
-            row.forEachIndexed { colIndex, value ->
-                ingredients[rowIndex, colIndex] = Cell(rowIndex, colIndex,"$value")
-            }
-        }
-    }
-
-    operator fun get(row: Int, col: Int): Cell?  {
-        try {
-            return ingredients[row][col]
-        } catch(e:ArrayIndexOutOfBoundsException) {
-            return null
-        }
-    }
-
-    override fun toString(): String {
-        val str = StringBuilder()
-        str.append("Pizza [rows=$rowCount, cols=$columnCount]\n\n")
-        for(i in 0 until rowCount) {
-            str.append(ingredients[i].joinToString("")).append("\n")
-        }
-        return "$str"
-    }
-}
