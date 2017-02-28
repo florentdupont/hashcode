@@ -139,17 +139,22 @@ fun run(path:String, out:String) {
     endpoints.forEach { e ->
 
         while (!e.value.requests.isEmpty() && !e.value.cacheLatencies.isEmpty()) {
+            //On recupere l'id du cache du endoint qui a la plus petite latence
             var minCacheId: Int = e.value.getRequestWithMostLatencyGainWithCacheId().second
             var requestWithMostLatencyGainWithCacheId = e.value.getRequestWithMostLatencyGainWithCacheId()
+            //On recupere la requete qui a le plus de gain de latence
             var requestWithMostLatencyGain: Request = requestWithMostLatencyGainWithCacheId.first
             val videoSize = videos[requestWithMostLatencyGain.videoId].size
             if (minCacheId != -1) {
                 if (videoSize <= caches[minCacheId].freeSize && !caches[minCacheId].videoIds.contains(requestWithMostLatencyGain.videoId)) {
+
                     caches[minCacheId].videoIds.add(requestWithMostLatencyGain.videoId)
                     caches[minCacheId].freeSize -= videoSize
+                    //on supprime la requete du endpoint
                     e.value.removeRequest(requestWithMostLatencyGain)
                 } else {/*if (videoSize > caches[minCacheId].freeSize) {*/
                     //cacheIsFull = true
+                    //Si plus de place on supprime le cache du endpoint (peut etre ameliore car il peut encore rester de la place)
                     e.value.removeCache(minCacheId)
                 }
             }

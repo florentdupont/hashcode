@@ -24,6 +24,7 @@ data class Endpoint(var i:Int, val datacenterLatency:Int, var cacheLatencies : H
         var cacheWithLessLatency = getCacheWithLessLatency()
         var lessLatency = cacheWithLessLatency.first
         var requestWithMostLatencyGain : Request = Request(-1,-1,-1,-1)
+        //On recupere la requete qui a le plus gros gain de latence
         requests.forEach { request ->
             var latencyGainWithCache = (request.viewCount * datacenterLatency) - (lessLatency * request.viewCount)
             if (latencyGainWithCache > latencyGain) {
