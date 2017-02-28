@@ -60,6 +60,8 @@ fun run(path:String, out:String) {
         endpoints[endpointIndex] = newEndpoint
     }
 
+
+
     println("after reading endpoints")
     val requests = ArrayList<Request>(requestCount)
 
@@ -69,24 +71,45 @@ fun run(path:String, out:String) {
 //        rest = rest.drop(1)
         val request = Request(videoId.toInt() , viewCount.toInt(), endpointId.toInt(),videos[videoId.toInt()].size)
         requests.add(request)
+        endpoints.get(endpointId.toInt())!!.addRequest(request)
     }
-
-
-    println(videos.size)
-    println(endpoints.size)
-    println(requests.size)
 
     var caches = ArrayList<Cache>(cacheCount)
 
     for(i in 0 until cacheCount) {
-        var cache = Cache(i, cacheSize)
+        var cache = Cache(i, cacheSize,getEndpointsFromCacheId(i,endpoints))
         caches.add(cache)
     }
+    println(videos.size)
+    println(endpoints.size)
+    println(requests.size)
+
+
 
     requests.sort()
     print(requests)
     // ALGO PRINCIPAL
-    requests.forEach { r ->
+    /*caches.forEach { cache ->
+        val numberOfSameVideoOfRequestLinkedToTheSameCache :HashMap<Int,Int> = HashMap()
+        cache.endpoints.forEach {
+            endpoint -> endpoint.requests.forEach {
+                request -> if (numberOfSameVideoOfRequestLinkedToTheSameCache.keys.contains(request.videoId)) {
+            numberOfSameVideoOfRequestLinkedToTheSameCache.put(request.videoId,(numberOfSameVideoOfRequestLinkedToTheSameCache.get(request.videoId)!! +1))
+        } else {
+            numberOfSameVideoOfRequestLinkedToTheSameCache.put(request.videoId,1)
+
+        }
+            }
+        }
+        numberOfSameVideoOfRequestLinkedToTheSameCache.forEach { key, value ->
+            if (value >= 4 && videos[key].size <= cache.freeSize) {
+                cache.videoIds.add(key)
+                cache.freeSize -= videos[key].size
+            }
+        }
+
+    }*/
+   /* requests.forEach { r ->
 
         val endpoint:Endpoint = endpoints[r.endpointId] as Endpoint
         val videoSize = videos[r.videoId].size
@@ -104,13 +127,36 @@ fun run(path:String, out:String) {
 
 
         if(minCacheId != -1) {
-            if( !caches[minCacheId].videoIds.contains(r.videoId)) {
+            if( !caches[minCacheId].videoIds.contains(r.videoId) && !isVideoIsInCacheWithSameEndpoint(r, caches[minCacheId])) {
                 caches[minCacheId].videoIds.add(r.videoId)
                 caches[minCacheId].freeSize -= videoSize
             }
         }
 
+    }*/
+
+
+    endpoints.forEach { e ->
+
+        while (!e.value.requests.isEmpty() && !e.value.cacheLatencies.isEmpty()) {
+            var minCacheId: Int = e.value.getRequestWithMostLatencyGainWithCacheId().second
+            var requestWithMostLatencyGainWithCacheId = e.value.getRequestWithMostLatencyGainWithCacheId()
+            var requestWithMostLatencyGain: Request = requestWithMostLatencyGainWithCacheId.first
+            val videoSize = videos[requestWithMostLatencyGain.videoId].size
+            if (minCacheId != -1) {
+                if (videoSize <= caches[minCacheId].freeSize && !caches[minCacheId].videoIds.contains(requestWithMostLatencyGain.videoId)) {
+                    caches[minCacheId].videoIds.add(requestWithMostLatencyGain.videoId)
+                    caches[minCacheId].freeSize -= videoSize
+                    e.value.removeRequest(requestWithMostLatencyGain)
+                } else {/*if (videoSize > caches[minCacheId].freeSize) {*/
+                    //cacheIsFull = true
+                    e.value.removeCache(minCacheId)
+                }
+            }
+
+        }
     }
+
 
 
 
@@ -124,6 +170,32 @@ fun run(path:String, out:String) {
         }
     }
 
+}
+
+
+fun getEndpointsFromCacheId(cacheId:Int,endpoints:HashMap<Int, Endpoint>):ArrayList<Endpoint> {
+    var res :ArrayList<Endpoint> = ArrayList<Endpoint>()
+    endpoints.forEach {
+        x ->
+        if (x.value.cacheLatencies.contains(cacheId)) {
+            res.add(x.value)
+
+        }
+    }
+
+    return res
+}
+fun isVideoIsInCacheWithSameEndpoint(request: Request,cache:Cache): Boolean {
+
+    cache.endpoints.forEach {
+        endpoint -> endpoint.requests.forEach {
+            req ->
+            if (req.videoId == request.videoId && req.endpointId != request.endpointId) {
+                return true
+            }
+        }
+    }
+    return false
 }
 
 
